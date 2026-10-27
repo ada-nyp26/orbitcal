@@ -26,6 +26,12 @@ def radial_velocity(times, parameters):
     predicted_radial_velocity : array-like, float
         Array of radial velocities predicted at each time point given
         shape(N,) where N is number of time points.
+
+    Raises
+    ------
+    ValueError
+        If given time array is invalid.
+        Invalid if: empty, not 1D, any element is not finite.
     """
 
     # create copies of given arrays ensuring original arrays are not altered
