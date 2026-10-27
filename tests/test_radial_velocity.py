@@ -43,3 +43,18 @@ class TestRadialVelocity:
         parameters = np.array([1, 2, 3, 4])
         with pytest.raises(ValueError):
             radial_velocity(times, parameters)
+
+
+    @pytest.mark.parametrize("parameters", [
+        (np.array([[1, 2], [2, 3]])),
+        [],
+        np.array([1, 2, np.inf, 4]),
+        np.array([1, 2, 3, 4, 5]),
+    ])
+    def test_valid_times(self, parameters):
+        """Check if value error raised when an invalid parameter array is
+        given"""
+
+        times = np.array([1, 2, 3, 4])
+        with pytest.raises(ValueError):
+            radial_velocity(times, parameters)
