@@ -1,0 +1,14 @@
+name: orbitcal
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+ - python=3.14
+ - pip
+ - ipython
+ - jupyter
+ - ipympl
+ - numpy
+ - scipy
+ - matplotlib
+ - pandas
