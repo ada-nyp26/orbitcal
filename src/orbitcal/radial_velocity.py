@@ -1,7 +1,20 @@
 import numpy as np
 
 
-__all__ = ["radial_velocity"]
+__all__ = ["radial_velocity", "validate_array"]
+
+
+def validate_array(array, array_name, expected_shape=None):
+    if (
+        array.ndim != 1
+        or len(array) == 0
+        or not np.all(np.isfinite(array))
+    ):
+        raise ValueError(f"{array_name} must not be empty, be 1D and all "
+                         f"elements must be finite.")
+
+    if expected_shape is not None and array.shape != expected_shape:
+        raise ValueError(f"{array_name} shape must be {expected_shape}.")
 
 
 def radial_velocity(times, parameters):
@@ -38,12 +51,10 @@ def radial_velocity(times, parameters):
     time_array = np.array(times, dtype=np.float64)
     parameters_array = np.array(parameters, dtype=np.float64)
 
-    # check if given time array is valid, can be checked after making a copy
+    # check if given array is valid, can be checked after making a copy
     # as elements are not changed
-    # time array invalid when: empty, not 1D, any element not finite
-    if time_array.ndim != 1 or len(time_array) == 0 or not np.all(
-            np.isfinite(time_array)):
-        raise ValueError("Given time array was not valid.")
+    validate_array(time_array, "time_array")
+    validate_array(parameters_array, "parameters_array", expected_shape=(4,))
 
     v0, K, P, phi = parameters_array
 

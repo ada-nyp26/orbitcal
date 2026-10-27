@@ -44,7 +44,6 @@ class TestRadialVelocity:
         with pytest.raises(ValueError):
             radial_velocity(times, parameters)
 
-
     @pytest.mark.parametrize("parameters", [
         (np.array([[1, 2], [2, 3]])),
         [],
