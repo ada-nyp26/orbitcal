@@ -32,6 +32,13 @@ def radial_velocity(times, parameters):
     time_array = np.array(times, dtype=np.float64)
     parameters_array = np.array(parameters, dtype=np.float64)
 
+    # check if given time array is valid, can be checked after making a copy
+    # as elements are not changed
+    # time array invalid when: empty, not 1D, any element not finite
+    if time_array.ndim != 1 or len(time_array) == 0 or not np.all(
+            np.isfinite(time_array)):
+        raise ValueError("Given time array was not valid.")
+
     v0, K, P, phi = parameters_array
 
     # broadcast equation over time_array
