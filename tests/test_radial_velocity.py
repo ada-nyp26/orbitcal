@@ -12,9 +12,9 @@ class TestRadialVelocity:
                                  # time array - case 1
                                  (np.array([0, 1, 2, 3, 4]),
                                   # parameters
-                                  np.array([10, 20, 40, 0]),
+                                  np.array([10, 20, 4, 0]),
                                   # expected velocities array
-                                  np.array([10, 30, 10, -10, 0])),
+                                  np.array([10, 30, 10, -10, 10])),
 
                                  # time array - case 2
                                  (np.array([0, 1, 2, -1]),
