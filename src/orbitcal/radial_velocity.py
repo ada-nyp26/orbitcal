@@ -45,6 +45,8 @@ def radial_velocity(times, parameters):
     ValueError
         If given time array is invalid.
         Invalid if: empty, not 1D, any element is not finite.
+        If given parameters are invalid.
+        Invalid if: empty, not 1D, any element is not finite, shape not (4, ).
     """
 
     # create copies of given arrays ensuring original arrays are not altered
@@ -87,7 +89,24 @@ def radial_velocity_jacobian(times, parameters):
         Jacobian matrix of shape (N, 4), where each row corresponds
         to an observation time and each column contains the partial
         derivative with respect to [v0, K, P, phi], respectively.
-        """
+
+    Raises
+    ------
+    ValueError
+        If given time array is invalid.
+        Invalid if: empty, not 1D, any element is not finite.
+        If given parameters are invalid.
+        Invalid if: empty, not 1D, any element is not finite, shape not (4, ).
+    """
+
+    # create copies of given arrays ensuring original arrays are not altered
+    time_array = np.array(times, dtype=np.float64)
+    parameters_array = np.array(parameters, dtype=np.float64)
+
+    # check if given array is valid, can be checked after making a copy
+    # as elements are not changed
+    validate_array(time_array, "time_array")
+    validate_array(parameters_array, "parameters_array", expected_shape=(4,))
 
     v0, K, P, phi = parameters
 
@@ -103,6 +122,6 @@ def radial_velocity_jacobian(times, parameters):
 
     # stack each calculated jacobian, each row representing a new relative time
     jacobian = np.column_stack((partial_gamma, partial_K, partial_P,
-                              partial_phi))
+                                partial_phi))
 
     return jacobian
