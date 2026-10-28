@@ -105,3 +105,12 @@ class TestRadialVelocityJacobian:
         np.testing.assert_allclose(
             result, expected_jacobian, rtol=0, atol=1e-12
         )
+
+    def test_P_equal_zero(self):
+        """Test ValueError raised when given P parameter equals 0"""
+
+        parameters = np.array([1, 2, 0, 3])
+        times = np.array([1, 2, 3, 4])
+
+        with pytest.raises(ValueError):
+            radial_velocity_jacobian(times, parameters)
