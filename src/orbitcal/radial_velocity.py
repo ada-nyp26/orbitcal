@@ -1,7 +1,7 @@
 import numpy as np
 
 
-__all__ = ["radial_velocity", "validate_array"]
+__all__ = ["radial_velocity", "validate_array", "radial_velocity_jacobian"]
 
 
 def validate_array(array, array_name, expected_shape=None):
@@ -67,7 +67,27 @@ def radial_velocity(times, parameters):
 
 def radial_velocity_jacobian(times, parameters):
     """Calculate the jacobian of the radial velocity model with respect to
-    its four parameters"""
+    its four parameters
+
+    Parameters
+    ----------
+    times : array-like, float
+        Array of relative observation times in days, shape (N,).
+
+    parameters : array-like, float
+        Array of parameters [v0, K, P, phi], shape (4,).
+        v0: systemic velocity (m/s)
+        K: radial velocity amplitude (m/s)
+        P: orbital period (days)
+        phi: phase at t = 0 (radians)
+
+    Returns
+    -------
+        jacobian : np.ndarray, float
+        Jacobian matrix of shape (N, 4), where each row corresponds
+        to an observation time and each column contains the partial
+        derivative with respect to [v0, K, P, phi], respectively.
+        """
 
     v0, K, P, phi = parameters
 
