@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from orbitcal import radial_velocity
+from orbitcal import radial_velocity_jacobian
 
 
 class TestRadialVelocity:
@@ -57,3 +58,43 @@ class TestRadialVelocity:
         times = np.array([1, 2, 3, 4])
         with pytest.raises(ValueError):
             radial_velocity(times, parameters)
+
+
+class TestRadialVelocityJacobian:
+    """Test for radial_velocity_jacobian() in radial_velocity.py"""
+
+    @pytest.mark.parametrize("times, parameters, expected_jacobian",
+                             [
+                                 # case 1 - zero phase
+                                 (np.array([0, 1, 2]),
+                                  # parameters
+                                  np.array([10, 20, 4, 0]),
+                                  # expected Jacobian
+                                  np.array([
+                                      [1, 0, 0, 20],
+                                      [1, 1, 0, 0],
+                                      [1, 0, 5*np.pi, -20]
+                                  ])),
+
+                                 # case 2 - nonzero phase and negative time
+                                 (np.array([0, 1, -1, 2]),
+                                  # parameters
+                                  np.array([10, 20, 4, np.pi/2]),
+                                  # expected Jacobian
+                                  np.array([
+                                      [1, 1, 0, 0],
+                                      [1, 0, 5*np.pi/2, -20],
+                                      [1, 0, 5*np.pi/2, 20],
+                                      [1, -1, 0, 0]
+                                  ])),
+                             ])
+    def test_radial_velocity_jacobian(
+        self, times, parameters, expected_jacobian
+    ):
+        """Test Jacobian gives correct analytical derivatives"""
+
+        result = radial_velocity_jacobian(times, parameters)
+
+        np.testing.assert_allclose(
+            result, expected_jacobian, rtol=0, atol=1e-12
+        )
