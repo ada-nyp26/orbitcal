@@ -63,3 +63,26 @@ def radial_velocity(times, parameters):
                                                   time_array)/P) + phi)
 
     return predicted_radial_velocity
+
+
+def radial_velocity_jacobian(times, parameters):
+    """Calculate the jacobian of the radial velocity model with respect to
+    its four parameters"""
+
+    v0, K, P, phi = parameters
+
+    # a is the part inside the sin(), separated for ease since it doesn't
+    # change during partial differentiation
+    a = (2 * np.pi * times / P) + phi
+
+    # partial derivatives with respect to each parameter
+    partial_gamma = np.ones_like(times, dtype=np.float64)
+    partial_K = np.sin(a)
+    partial_P = -(2 * np.pi * times * K / P ** 2) * np.cos(a)
+    partial_phi = K * np.cos(a)
+
+    # stack each calculated jacobian, each row representing a new relative time
+    jacobian = np.column_stack((partial_gamma, partial_K, partial_P,
+                              partial_phi))
+
+    return jacobian
