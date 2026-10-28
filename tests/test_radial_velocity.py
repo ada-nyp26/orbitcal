@@ -44,6 +44,8 @@ class TestRadialVelocity:
         parameters = np.array([1, 2, 3, 4])
         with pytest.raises(ValueError):
             radial_velocity(times, parameters)
+        with pytest.raises(ValueError):
+            radial_velocity_jacobian(times, parameters)
 
     @pytest.mark.parametrize("parameters", [
         (np.array([[1, 2], [2, 3]])),
@@ -56,8 +58,13 @@ class TestRadialVelocity:
         given"""
 
         times = np.array([1, 2, 3, 4])
+
+        # test both functions, radial_velocity() and
+        # radial_velocity_jacobian()
         with pytest.raises(ValueError):
             radial_velocity(times, parameters)
+        with pytest.raises(ValueError):
+            radial_velocity_jacobian(times, parameters)
 
 
 class TestRadialVelocityJacobian:
