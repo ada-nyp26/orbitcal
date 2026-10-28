@@ -110,6 +110,11 @@ def radial_velocity_jacobian(times, parameters):
 
     v0, K, P, phi = parameters
 
+    # raise ValueError if P = 0, can't equal 0 since division by P in
+    # radial velocity with respect to P
+    if P == 0:
+        raise ValueError("P cannot be equal to 0.")
+
     # a is the part inside the sin(), separated for ease since it doesn't
     # change during partial differentiation
     a = (2 * np.pi * times / P) + phi
