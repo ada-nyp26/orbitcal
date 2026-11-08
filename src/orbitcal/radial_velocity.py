@@ -57,6 +57,11 @@ def radial_velocity(times, parameters):
 
     v0, K, P, phi = parameters_array
 
+    # raise value error when P <= 0, P should not be negative and P = 0 will
+    # return NaNs
+    if P <= 0:
+        raise ValueError("P should be postive.")
+
     # broadcast equation over time_array
     predicted_radial_velocity = v0 + K * np.sin(
         ((2 * np.pi * time_array) / P) + phi
@@ -110,8 +115,8 @@ def radial_velocity_jacobian(times, parameters):
 
     # raise ValueError if P = 0, can't equal 0 since division by P in
     # radial velocity with respect to P
-    if P == 0:
-        raise ValueError("P cannot be equal to 0.")
+    if P <= 0:
+        raise ValueError("P must be positive.")
 
     # a is the part inside the sin(), separated for ease since it doesn't
     # change during partial differentiation
