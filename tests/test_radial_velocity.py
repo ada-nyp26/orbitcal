@@ -141,7 +141,7 @@ class TestRadialVelocityJacobian:
             [[1, 0, 0, 20], [1, 1, 0, 0], [1, 0, 5 * np.pi, -20]]
         )
 
-        result = radial_velocity_jacobian(times, paramters)
+        result = radial_velocity_jacobian(times, parameters)
 
         assert isinstance(result, np.ndarray)
         assert result.dtype == np.float64
