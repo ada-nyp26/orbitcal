@@ -153,3 +153,55 @@ class TestGaussNewton:
         )
 
         assert isinstance(result, FitResult)
+
+    @pytest.mark.parametrize(
+        "residual_fn, jacobian_fn, initial_params",
+        [
+            # residuals 2D, shape (1, 1)
+            (lambda p: np.array([p - 3]), simple_jacobian, [0.0]),
+            # residuals scalar, not an array
+            (lambda p: -3.0, simple_jacobian, [0.0]),
+            # residuals contain NaN
+            (lambda p: np.array([np.nan]), simple_jacobian, [0.0]),
+            # residuals contain infinity
+            (lambda p: np.array([np.inf]), simple_jacobian, [0.0]),
+            # residuals empty, N = 0
+            (lambda p: np.array([]), lambda p: np.ones((0, 1)), [0.0]),
+            # fewer residuals than parameters, N = 1 < M = 2
+            (
+                lambda p: np.array([p[0] + p[1] - 3]),
+                lambda p: np.array([[1.0, 1.0]]),
+                [0.0, 0.0],
+            ),
+        ],
+    )
+    def test_invalid_first_residuals(
+        self, residual_fn, jacobian_fn, initial_params
+    ):
+        """Check ValueError raised when the first residuals are not a
+        finite 1D array with at least as many values as parameters"""
+
+        with pytest.raises(ValueError, match="residuals"):
+            gauss_newton(residual_fn, jacobian_fn, initial_params)
+
+    @pytest.mark.parametrize(
+        "jacobian_fn",
+        [
+            # 1D, not 2D
+            lambda p: np.ones(1),
+            # too many columns, shape (1, 2) instead of (1, 1)
+            lambda p: np.ones((1, 2)),
+            # too many rows, shape (2, 1) instead of (1, 1)
+            lambda p: np.ones((2, 1)),
+            # contains NaN
+            lambda p: np.array([[np.nan]]),
+            # contains infinity
+            lambda p: np.array([[np.inf]]),
+        ],
+    )
+    def test_invalid_first_jacobian(self, jacobian_fn):
+        """Check ValueError raised when the first Jacobian is not finite
+        or does not have shape (N, M)"""
+
+        with pytest.raises(ValueError, match="jacobian"):
+            gauss_newton(simple_residual, jacobian_fn, [0.0])
