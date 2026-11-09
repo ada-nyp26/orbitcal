@@ -45,16 +45,19 @@ def validate_residuals(residuals, n_params):
         )
 
 
-def validate_jacobian(jacobian, n_residuals, n_params):
-    """Check the Jacobian is finite with shape (N, M), raising ValueError
-    if not"""
+def validate_jacobian(jacobian, n_residuals, n_params, iteration):
+    """Check the Jacobian is finite with shape (N, M)
+    Raises ValueError on first iteration (bad user input),
+    but raises RuntimeError on later iterations (optimser has failed)
+    """
 
     if jacobian.shape != (n_residuals, n_params) or not np.all(
         np.isfinite(jacobian)
     ):
-        raise ValueError(
-            f"First jacobian must be finite with shape "
-            f"({n_residuals}, {n_params}), got shape {jacobian.shape}."
+        error_type = ValueError if iteration == 1 else RuntimeError
+        raise error_type(
+            f"jacobian at iteration {iteration} must be finite with shape"
+            f"({n_residuals}, {n_params}), got shape {jacobian.shape}"
         )
 
 
@@ -136,13 +139,41 @@ def gauss_newton(
 
     for iteration in range(1, max_iter + 1):
         jacobian = np.asarray(jacobian_fn(params), dtype=np.float64)
-        validate_jacobian(jacobian, len(residuals), len(params))
+        validate_jacobian(jacobian, len(residuals), len(params), iteration)
 
-        # solve J * step = -r in the least-squares sense
-        step = np.linalg.lstsq(jacobian, -residuals, rcond=None)[0]
+        # solve J * step = -r in the least-squares sense, keeping the rank
+        step, _, rank, _ = np.linalg.lstsq(jacobian, -residuals, rcond=None)
+
+        # dependent columns mean there is no unique step
+        if rank < len(params):
+            raise RuntimeError(
+                f"jacobian is rank-deficient at iteration {iteration} "
+                f"(rank {rank} < {len(params)} parameters), so no unique "
+                f"step exists."
+            )
 
         new_params = params + step
-        residuals = np.asarray(residual_fn(new_params), dtype=np.float64)
+
+        # the model may reject parameters the step has moved into,
+        # e.g. a negative period
+        try:
+            new_residuals = residual_fn(new_params)
+        except ValueError as error:
+            raise RuntimeError(
+                f"step at iteration {iteration} moved parameters to "
+                f"{new_params}, where residual_fn failed: {error}"
+            ) from error
+
+        new_residuals = np.asarray(new_residuals, dtype=np.float64)
+        if new_residuals.shape != residuals.shape or not np.all(
+            np.isfinite(new_residuals)
+        ):
+            raise RuntimeError(
+                f"residuals at iteration {iteration} are non-finite or "
+                f"changed shape from {residuals.shape} to "
+                f"{new_residuals.shape}."
+            )
+        residuals = new_residuals
 
         # compare step size against the OLD parameters, before updating
         converged = np.linalg.norm(step) <= tol * (1 + np.linalg.norm(params))
