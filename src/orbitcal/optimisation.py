@@ -6,7 +6,7 @@ import numpy as np
 __all__ = ["FitResult", "gauss_newton"]
 
 
-# helper functions to validate inputs
+# validation helper functions to validate inputs
 def validate_inputs(residual_fn, jacobian_fn, tol, max_iter):
     """Check gauss_newton() inputs are valid, raising ValueError if not"""
 
@@ -28,6 +28,34 @@ def validate_inputs(residual_fn, jacobian_fn, tol, max_iter):
         or max_iter < 1
     ):
         raise ValueError("max_iter must be a positive integer")
+
+
+def validate_residuals(residuals, n_params):
+    """Check the first residuals are a finite 1D array with at least one
+    value per parameter, raising ValueError if not"""
+
+    if (
+        residuals.ndim != 1
+        or len(residuals) < n_params
+        or not np.all(np.isfinite(residuals))
+    ):
+        raise ValueError(
+            f"First residuals must be a finite 1D array with at least "
+            f"{n_params} values (one per parameter)."
+        )
+
+
+def validate_jacobian(jacobian, n_residuals, n_params):
+    """Check the Jacobian is finite with shape (N, M), raising ValueError
+    if not"""
+
+    if jacobian.shape != (n_residuals, n_params) or not np.all(
+        np.isfinite(jacobian)
+    ):
+        raise ValueError(
+            f"First jacobian must be finite with shape "
+            f"({n_residuals}, {n_params}), got shape {jacobian.shape}."
+        )
 
 
 @dataclass
@@ -99,6 +127,7 @@ def gauss_newton(
     validate_array(params, "initial_params")
 
     residuals = np.asarray(residual_fn(params), dtype=np.float64)
+    validate_residuals(residuals, len(params))
     initial_cost = 0.5 * np.sum(residuals**2)
 
     # already a perfect fit, nothing to do
@@ -107,6 +136,7 @@ def gauss_newton(
 
     for iteration in range(1, max_iter + 1):
         jacobian = np.asarray(jacobian_fn(params), dtype=np.float64)
+        validate_jacobian(jacobian, len(residuals), len(params))
 
         # solve J * step = -r in the least-squares sense
         step = np.linalg.lstsq(jacobian, -residuals, rcond=None)[0]
