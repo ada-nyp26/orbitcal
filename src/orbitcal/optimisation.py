@@ -1,8 +1,33 @@
 from dataclasses import dataclass
+from .radial_velocity import validate_array
 
 import numpy as np
 
 __all__ = ["FitResult", "gauss_newton"]
+
+
+# helper functions to validate inputs
+def validate_inputs(residual_fn, jacobian_fn, tol, max_iter):
+    """Check gauss_newton() inputs are valid, raising ValueError if not"""
+
+    if not callable(residual_fn) or not callable(jacobian_fn):
+        raise ValueError("residual_fn and jacobian_fn must be callable.")
+
+    # bool checked first as True and False count as integers
+    if (
+        isinstance(tol, bool)
+        or not isinstance(tol, (int, float, np.integer, np.floating))
+        or not np.isfinite(tol)
+        or tol <= 0
+    ):
+        raise ValueError("tol must be a positive finite number.")
+
+    if (
+        isinstance(max_iter, bool)
+        or not isinstance(max_iter, (int, np.integer))
+        or max_iter < 1
+    ):
+        raise ValueError("max_iter must be a positive integer")
 
 
 @dataclass
@@ -67,8 +92,11 @@ def gauss_newton(
         and convergence status.
     """
 
+    validate_inputs(residual_fn, jacobian_fn, tol, max_iter)
+
     # copy so the caller's array is never altered
     params = np.array(initial_params, dtype=np.float64)
+    validate_array(params, "initial_params")
 
     residuals = np.asarray(residual_fn(params), dtype=np.float64)
     initial_cost = 0.5 * np.sum(residuals**2)
