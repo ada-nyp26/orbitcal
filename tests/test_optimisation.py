@@ -3,6 +3,8 @@ import pytest
 
 from orbitcal import gauss_newton
 from orbitcal import FitResult
+from orbitcal import radial_velocity
+from orbitcal import radial_velocity_jacobian
 
 # x values used by the two-parameter and nonlinear problems
 X = np.array([0, 1, 2, 3], dtype=np.float64)
@@ -16,6 +18,20 @@ def simple_residual(params):
 
 def simple_jacobian(params):
     return np.ones((1, 1))
+
+
+# irregular times and exact velocities for a radial velocity problem
+T = np.array([0.0, 0.7, 1.9, 2.6, 3.8, 4.4, 5.1, 6.3])
+V = radial_velocity(T, [5, 40, 5, 0.3])
+
+
+def domain_residual(params):
+    """r(x) = x - 3, but only valid for x <= 1, like a model that rejects
+    a negative period"""
+
+    if params[0] > 1:
+        raise ValueError("x outside model domain")
+    return params - 3
 
 
 class TestGaussNewton:
@@ -205,3 +221,66 @@ class TestGaussNewton:
 
         with pytest.raises(ValueError, match="jacobian"):
             gauss_newton(simple_residual, jacobian_fn, [0.0])
+
+    @pytest.mark.parametrize(
+        "residual_fn, jacobian_fn, initial_params",
+        [
+            # identical columns, only p[0] + p[1] matters
+            (
+                lambda p: (p[0] + p[1]) * X - 2 * X,
+                lambda p: np.column_stack((X, X)),
+                [0.0, 0.0],
+            ),
+            # column of zeros, p[1] has no effect
+            (
+                lambda p: p[0] - X,
+                lambda p: np.column_stack((np.ones_like(X), np.zeros_like(X))),
+                [0.0, 0.0],
+            ),
+            # radial velocity model with K = 0, P and phi have no effect
+            (
+                lambda p: radial_velocity(T, p) - V,
+                lambda p: radial_velocity_jacobian(T, p),
+                [5.0, 0.0, 5.0, 0.3],
+            ),
+        ],
+    )
+    def test_rank_deficient_jacobian(
+        self, residual_fn, jacobian_fn, initial_params
+    ):
+        """Check RuntimeError raised when the Jacobian does not have full
+        column rank, so no unique step exists"""
+
+        with pytest.raises(RuntimeError):
+            gauss_newton(residual_fn, jacobian_fn, initial_params)
+
+    @pytest.mark.parametrize(
+        "residual_fn, jacobian_fn",
+        [
+            # residual_fn raises after the first step (x = 0 -> x = 3)
+            (domain_residual, lambda p: np.array([[1.0]])),
+            # residuals become NaN after the first step
+            (
+                lambda p: p - 3 if p[0] < 1 else np.array([np.nan]),
+                lambda p: np.array([[1.0]]),
+            ),
+            # jacobian becomes NaN after the first step
+            (
+                lambda p: p - 3,
+                lambda p: (
+                    np.array([[1.0]]) if p[0] < 1 else np.array([[np.nan]])
+                ),
+            ),
+            # jacobian becomes the wrong shape after the first step
+            (
+                lambda p: p - 3,
+                lambda p: np.array([[1.0]]) if p[0] < 1 else np.ones((1, 2)),
+            ),
+        ],
+    )
+    def test_later_step_failure(self, residual_fn, jacobian_fn):
+        """Check RuntimeError raised when a later step makes the residuals
+        or Jacobian invalid, rather than ValueError or a silent result"""
+
+        with pytest.raises(RuntimeError):
+            gauss_newton(residual_fn, jacobian_fn, [0.0])
